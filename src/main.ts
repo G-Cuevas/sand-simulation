@@ -10,18 +10,54 @@ const ctx = canvas.getContext('2d')!;
 
 window.onload = setup;
 
-canvas.addEventListener('click', (e) => {
+let sandColor = '360'
+const getSandColor = () => {
+  return `hsl(${sandColor}, 100%, 50%)`;
+}
+
+let hold = false;
+
+const createSandEvent = (e: MouseEvent) => {
   const x = Math.floor(e.offsetX / gridSize);
   const y = Math.floor(e.offsetY / gridSize);
-  terrain[x][y] = 'red';
+  
+  if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return;
+  
+  let brushSize = 5;
+  let brushRadius = Math.floor(brushSize / 2);
+  sandColor = (parseInt(sandColor) + 1).toString();
+  
+  for (let i = -brushRadius; i <= brushRadius; i++) {
+    for (let j = -brushRadius; j <= brushRadius; j++) {
+      let col = x + i;
+      let row = y + j;
+      if (col < 0 || col >= gridWidth || row < 0 || row >= gridHeight) continue;
+      if (terrain[col][row] === airColor) {
+        terrain[col][row] = getSandColor();
+      }
+    }
+  }
+
+}
+
+canvas.addEventListener('mousedown', () => {
+  hold = true;
+});
+
+canvas.addEventListener('mouseup', () => {
+  hold = false;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (hold) createSandEvent(e);
 });
 
 const gridShow = false;
-const FPS = 10;
+const FPS = 30;
 
-const gridSize = 10;
-const gridWidth = 100;
-const gridHeight = 50;
+const gridSize = 5;
+const gridWidth = 200;
+const gridHeight = 100;
 
 const canvasWidth = gridWidth * gridSize;
 const canvasHeight = gridHeight * gridSize;
@@ -43,8 +79,8 @@ const create2DArray = (rows: number, cols: number, defaultValue: any = null) => 
   return arr;
 }
 
-const terrainColor = 'white';
-const terrain = create2DArray(gridWidth, gridHeight, terrainColor);
+const airColor = '#123123';
+const terrain = create2DArray(gridWidth, gridHeight, airColor);
 
 function setup() {
   
@@ -94,30 +130,26 @@ const tick = () => {
   for (let x = 0; x < gridWidth; x++) {
     for (let y = 0; y < gridHeight; y++) {
 
-      if (y === gridHeight - 1) continue;
-      
       const current = terrain[x][y];
       const below = terrain[x][y + 1];
-      const belowLeft = terrain[x - 1] ? terrain[x - 1][y + 1] : null;
-      const belowRight = terrain[x + 1] ? terrain[x + 1][y + 1] : null;
 
-      if (current === 'white') continue;
+      const randomSide = Math.random() > 0.5 ? -1 : 1;
+      const belowA = terrain[x - randomSide] ? terrain[x - randomSide][y + 1] : null;
+      const belowB = terrain[x + randomSide] ? terrain[x + randomSide][y + 1] : null;
 
-      if (current === 'red') {
-        if (below && below === 'white') {
-          updates.push({ x, y, color: 'white' });
-          updates.push({ x, y: (y + 1), color: 'red' });
-        };
-  
+      if (current != airColor) {
+        if (below === airColor) {
+          updates.push({ x, y, color: airColor });
+          updates.push({ x, y: (y + 1), color: current });
 
-        if (below === 'red' && belowLeft && belowLeft === 'white') {
-          updates.push({ x, y, color: 'white' });
-          updates.push({ x: (x - 1), y: (y + 1), color: 'red' });
-        };
-  
-        if (below === 'red' && belowLeft === 'red' && belowRight && belowRight === 'white') {
-          updates.push({ x, y, color: 'white' });
-          updates.push({ x: (x + 1), y: (y + 1), color: 'red' });
+        } else if (belowA === airColor) {
+          updates.push({ x, y, color: airColor });
+          updates.push({ x: (x - randomSide), y: (y + 1), color: current });
+
+        } else if (belowB === airColor) {
+          updates.push({ x, y, color: airColor });
+          updates.push({ x: (x + randomSide), y: (y + 1), color: current });
+
         };
       };
     };
