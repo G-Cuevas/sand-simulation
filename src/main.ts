@@ -45,7 +45,6 @@ const create2DArray = (rows: number, cols: number, defaultValue: any = null) => 
 
 const terrainColor = 'white';
 const terrain = create2DArray(gridWidth, gridHeight, terrainColor);
-terrain[50][0] = 'red';
 
 function setup() {
   
@@ -92,19 +91,37 @@ const tick = () => {
   
   const updates: RenderUpdate[] = [];
   
-  for (let i = 0; i < gridWidth; i++) {
-    for (let j = 0; j < gridHeight; j++) {
-      if (j === gridHeight - 1) continue;
-      const current = terrain[i][j];
-      const below = terrain[i][j + 1];
-      
-      if (current === 'red' && below === 'white') {
-        updates.push({ x: i, y: j, color: 'white' });
-        updates.push({ x: i, y: (j + 1), color: 'red' });
-      };
+  for (let x = 0; x < gridWidth; x++) {
+    for (let y = 0; y < gridHeight; y++) {
 
-    }
-  }
+      if (y === gridHeight - 1) continue;
+      
+      const current = terrain[x][y];
+      const below = terrain[x][y + 1];
+      const belowLeft = terrain[x - 1] ? terrain[x - 1][y + 1] : null;
+      const belowRight = terrain[x + 1] ? terrain[x + 1][y + 1] : null;
+
+      if (current === 'white') continue;
+
+      if (current === 'red') {
+        if (below && below === 'white') {
+          updates.push({ x, y, color: 'white' });
+          updates.push({ x, y: (y + 1), color: 'red' });
+        };
+  
+
+        if (below === 'red' && belowLeft && belowLeft === 'white') {
+          updates.push({ x, y, color: 'white' });
+          updates.push({ x: (x - 1), y: (y + 1), color: 'red' });
+        };
+  
+        if (below === 'red' && belowLeft === 'red' && belowRight && belowRight === 'white') {
+          updates.push({ x, y, color: 'white' });
+          updates.push({ x: (x + 1), y: (y + 1), color: 'red' });
+        };
+      };
+    };
+  };
 
   for (const update of updates) {
     terrain[update.x][update.y] = update.color;
